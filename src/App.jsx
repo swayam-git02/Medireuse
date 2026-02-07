@@ -1,6 +1,6 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 
-import Navbar from "./components/Navbar";
+import Navbar from "./components/navbar";
 import Hero from "./components/Hero";
 import Features from "./components/Features";
 import HowItWorks from "./components/HowItWorks";
@@ -22,9 +22,12 @@ function Home() {
 }
 
 export default function App() {
+  const location = useLocation();
+  const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+
   return (
     <>
-      <Navbar />
+      {!isAuthRoute && <Navbar />}
 
       <Routes>
         <Route path="/" element={<Home />} />
@@ -32,7 +35,7 @@ export default function App() {
         <Route path="/signup" element={<Signup />} />
       </Routes>
 
-      <Footer />
+      {!isAuthRoute && <Footer />}
     </>
   );
 }

@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.auth-scene {
+  perspective: 1400px;
+}
+
+.auth-flip-card {
+  min-height: 480px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+
+.auth-flip-card.is-signup {
+  transform: rotateY(180deg);
+}
+
+.auth-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  padding: 1.6rem;
+  backface-visibility: hidden;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
+.auth-face-back {
+  transform: rotateY(180deg);
+}
+
+@media (max-width: 640px) {
+  .auth-flip-card {
+    min-height: 520px;
+  }
+
+  .auth-face {
+    padding: 1.2rem;
+  }
+}
