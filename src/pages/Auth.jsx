@@ -34,7 +34,7 @@ export default function Auth({ initialMode = "login" }) {
 
   return (
     <>
-      <Navbar />
+      <Navbar showAuthButtons={false} showProfileIcon={true} />
 
       <section
         className="relative min-h-[calc(100vh-96px)] bg-no-repeat px-4 py-6 sm:px-6"
