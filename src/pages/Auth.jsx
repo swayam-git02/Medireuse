@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../components/navbar";
+import Navbar from "../components/Navbar";
 
 export default function Auth({ initialMode = "login" }) {
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ export default function Auth({ initialMode = "login" }) {
               <button
                 type="button"
                 onClick={() => setIsSignup(false)}
-                className={`rounded-xl px-3 py-2 transition ${!isSignup ? "bg-white text-emerald-700" : "text-white/85"}`}
+                className={`rounded-xl px-3 py-2 transition ${isSignup ? "text-white/85" : "bg-white text-emerald-700"}`}
               >
                 Login
               </button>
