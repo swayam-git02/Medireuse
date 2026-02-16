@@ -9,6 +9,7 @@ import Footer from "./components/Footer";
 
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import BrowseMedicine from "./pages/BrowseMedicine";
 
 function Home() {
   return (
@@ -24,18 +25,20 @@ function Home() {
 export default function App() {
   const location = useLocation();
   const isAuthRoute = location.pathname === "/login" || location.pathname === "/signup";
+  const isBrowseMedicineRoute = location.pathname === "/buy-medicine";
 
   return (
     <>
-      {!isAuthRoute && <Navbar />}
+      {!isAuthRoute && <Navbar disableAnimations={isBrowseMedicineRoute} />}
 
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/buy-medicine" element={<BrowseMedicine />} />
       </Routes>
 
-      {!isAuthRoute && <Footer />}
+      {!isAuthRoute && !isBrowseMedicineRoute && <Footer />}
     </>
   );
 }

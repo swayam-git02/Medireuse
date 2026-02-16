@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/navbar";
 
 export default function Auth({ initialMode = "login" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSignup, setIsSignup] = useState(initialMode === "signup");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
@@ -15,10 +16,12 @@ export default function Auth({ initialMode = "login" }) {
   const handleLogin = (e) => {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem("user"));
+    const redirectTo = location.state?.from || "/";
 
     if (user && user.email === loginForm.email && user.password === loginForm.password) {
+      localStorage.setItem("isLoggedIn", "true");
       alert("Login Successful!");
-      navigate("/");
+      navigate(redirectTo);
       return;
     }
 
