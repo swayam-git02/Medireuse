@@ -1,4 +1,5 @@
 import React, { useLayoutEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 
 export default function Hero() {
@@ -73,18 +74,20 @@ export default function Hero() {
           </p>
 
           <div className="mt-8 flex gap-4">
-            <button
+            <Link
+              to="/login"
               ref={primaryBtnRef}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105 inline-flex items-center justify-center"
             >
               Sell Medicines
-            </button>
-            <button
+            </Link>
+            <Link
+              to="/buy-medicine"
               ref={secondaryBtnRef}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105"
             >
               Browse Medicines
-            </button>
+            </Link>
           </div>
         </div>
 
@@ -101,4 +104,3 @@ export default function Hero() {
     </section>
   );
 }
-

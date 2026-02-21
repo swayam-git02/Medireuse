@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import { useLocation, useNavigate } from "react-router-dom";
+import Navbar from "../components/navbar";
 
 export default function Auth({ initialMode = "login" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSignup, setIsSignup] = useState(initialMode === "signup");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ name: "", email: "", password: "" });
@@ -15,10 +16,12 @@ export default function Auth({ initialMode = "login" }) {
   const handleLogin = (e) => {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem("user"));
+    const redirectTo = location.state?.from || "/";
 
     if (user && user.email === loginForm.email && user.password === loginForm.password) {
+      localStorage.setItem("isLoggedIn", "true");
       alert("Login Successful!");
-      navigate("/");
+      navigate(redirectTo);
       return;
     }
 
@@ -34,7 +37,7 @@ export default function Auth({ initialMode = "login" }) {
 
   return (
     <>
-      <Navbar />
+      <Navbar showAuthButtons={false} showProfileIcon={true} />
 
       <section
         className="relative min-h-[calc(100vh-96px)] bg-no-repeat px-4 py-6 sm:px-6"
@@ -45,7 +48,7 @@ export default function Auth({ initialMode = "login" }) {
           backgroundColor: "#5f878c",
         }}
       >
-        <div className="absolute inset-0 bg-slate-900/25" />
+        <div className="absolute inset-0 bg-white/10" />
 
         <div className="relative mx-auto flex min-h-[calc(100vh-96px)] w-full max-w-7xl items-center justify-center md:justify-end md:pr-8 lg:pr-16">
           <div className="w-full max-w-md rounded-3xl border border-white/25 bg-white/10 p-3 backdrop-blur-sm shadow-[0_18px_60px_rgba(12,24,18,0.45)]">
@@ -53,7 +56,7 @@ export default function Auth({ initialMode = "login" }) {
               <button
                 type="button"
                 onClick={() => setIsSignup(false)}
-                className={`rounded-xl px-3 py-2 transition ${isSignup ? "text-white/85" : "bg-white text-emerald-700"}`}
+                className={`rounded-xl px-3 py-2 transition ${!isSignup ? "bg-white text-emerald-700" : "text-white/85"}`}
               >
                 Login
               </button>
