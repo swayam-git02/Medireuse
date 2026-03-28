@@ -75,7 +75,7 @@ export default function Hero() {
 
           <div className="mt-8 flex gap-4">
             <Link
-              to="/login"
+              to="/sell-medicine"
               ref={primaryBtnRef}
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105 inline-flex items-center justify-center"
             >

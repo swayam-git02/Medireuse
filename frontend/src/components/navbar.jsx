@@ -11,6 +11,11 @@ export default function Navbar({
 
   const user = authAPI.getStoredUser();
   const isAdmin = user?.role === 'admin';
+  const profileInitials = user?.name
+    ?.split(" ")
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "U";
 
   const dashboardLinks = [
     { label: "Dashboard", path: "/" },
@@ -131,10 +136,10 @@ export default function Navbar({
 
         {!showAuthButtons && showProfileIcon && (
           <div className="flex items-center gap-3">
-            <button
-              type="button"
+            <Link
+              to="/profile"
               aria-label="Profile"
-              className="h-11 w-11 rounded-full border border-[#b9d7c6] bg-[#eef8f2] text-[#0f5132] flex items-center justify-center"
+              className="h-11 w-11 rounded-full border border-[#b9d7c6] bg-[#eef8f2] text-[#0f5132] flex items-center justify-center transition-colors hover:bg-[#e2f2ea]"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -146,10 +151,10 @@ export default function Navbar({
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 19.125a7.5 7.5 0 0115 0" />
               </svg>
-            </button>
+            </Link>
             {mode === "dashboard" && (
               <span className="hidden md:inline-flex items-center gap-1 text-[30px] text-[#526770] font-medium">
-                AD
+                {profileInitials}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"

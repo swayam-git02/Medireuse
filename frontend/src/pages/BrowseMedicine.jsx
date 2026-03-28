@@ -3,6 +3,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, Package, Search } from "lucide-
 import { gsap } from "gsap";
 import BuyNowModal from "../components/BuyNowModal.jsx";
 
+// Yeh category list dropdown me dikhayi jaati hai.
 const categories = [
   { label: "Tablets", count: 120 },
   { label: "Syrups", count: 53 },
@@ -10,6 +11,7 @@ const categories = [
   { label: "Supplements", count: 42 },
 ];
 
+// Yeh sample medicine data hai jo cards me render hota hai.
 const medicines = [
   { name: "Paracetamol", type: "Tablet", expiry: "2025-08-12", price: 120, qty: 20, verified: false },
   { name: "Amoxicilin 250mg", type: "Capsule", expiry: "2024-11-20", price: 80, qty: 15, verified: false },
@@ -23,22 +25,30 @@ const medicines = [
 ];
 
 export default function BrowseMedicine() {
+  // In refs ka use animation ke liye hota hai, taaki hum exact section ko animate kar sakein.
   const pageRef = useRef(null);
   const headerRef = useRef(null);
   const cardsRef = useRef([]);
   const paginationRef = useRef(null);
 
+  // User ne kaunsa filter select kiya, wo yaha store hota hai.
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [sortOrder, setSortOrder] = useState(null); // 'asc' or 'desc'
+  // 'asc' = jaldi expiry pehle, 'desc' = late expiry pehle.
+  const [sortOrder, setSortOrder] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Yeh main function hai jo data ko filter + search + sort karke final list return karta hai.
   const getFilteredMedicines = () => {
+    // Start me saari medicines lete hain.
     let filtered = medicines;
+
+    // Agar category select hui hai to us type ki medicines hi rakhenge.
     if (selectedCategory) {
+      // UI category ko actual data type se map kar rahe hain.
       const typeMap = {
         Tablets: 'Tablet',
         Syrups: 'Syrup',
@@ -48,9 +58,13 @@ export default function BrowseMedicine() {
       const targetType = typeMap[selectedCategory];
       filtered = filtered.filter(m => m.type === targetType);
     }
+
+    // Search box me jo text user likhega uske hisab se naam match karke filter karenge.
     if (searchQuery.trim()) {
       filtered = filtered.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }
+
+    // Expiry date ke hisab se sorting (ascending ya descending) karte hain.
     if (sortOrder) {
       filtered = [...filtered].sort((a, b) => {
         const dateA = new Date(a.expiry);
@@ -63,6 +77,7 @@ export default function BrowseMedicine() {
 
   const filteredMedicines = getFilteredMedicines();
 
+  // Yeh function dropdown ke bahar click hote hi dropdown close kar deta hai.
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (!event.target.closest('.dropdown') && !event.target.closest('.sort-dropdown')) {
@@ -76,20 +91,25 @@ export default function BrowseMedicine() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isDropdownOpen, isSortDropdownOpen]);
 
+  // Yeh GSAP animation wala part hai: page load pe header, cards aur pagination smooth entry lete hain.
   useLayoutEffect(() => {
     cardsRef.current = cardsRef.current.filter(Boolean);
 
     const ctx = gsap.context(() => {
+      // Agar user device me reduced motion setting on hai, to animation skip kar dete hain.
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReducedMotion) return;
 
+      // Timeline ka matlab: ek ke baad ek animation sequence me chalana.
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
+      // 1) Header fade + slide in.
       tl.fromTo(
         headerRef.current,
         { opacity: 0, y: 26 },
         { opacity: 1, y: 0, duration: 0.55, clearProps: "opacity,transform" }
       )
+        // 2) Cards fade + slide in with stagger (ek-ek karke).
         .fromTo(
           cardsRef.current,
           { opacity: 0, y: 28 },
@@ -102,6 +122,7 @@ export default function BrowseMedicine() {
           },
           "-=0.25"
         )
+        // 3) Pagination last me softly appear hota hai.
         .fromTo(
           paginationRef.current,
           { opacity: 0, y: 14 },
@@ -124,30 +145,36 @@ export default function BrowseMedicine() {
             </p>
 
             <div className="mt-5 grid gap-3 md:grid-cols-[1.6fr_1fr_1fr_auto]">
+              {/* Search input: yaha user medicine ka naam likh kar list filter karta hai */}
               <label className="flex items-center gap-3 rounded-xl border border-[#d3e7e0] bg-white px-4 py-3 text-[#5b7570]">
                 <Search size={17} />
                 <input
                   type="text"
                   placeholder="Search medicine by name..."
                   value={searchQuery}
+                  // onChange function har typing pe state update karta hai.
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent text-sm md:text-base outline-none placeholder:text-[#8aa39c]"
                 />
               </label>
 
+              {/* Category dropdown: yaha category choose karte hi list filter ho jaati hai */}
               <div className="relative dropdown">
                 <button
                   type="button"
+                  // onClick function dropdown open/close karta hai.
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center justify-between rounded-xl border border-[#d3e7e0] bg-white px-4 py-3 text-sm md:text-base text-[#3d5f57] w-full"
                 >
                   {selectedCategory || 'All Categories'}
+                  {/* transition-transform = arrow icon rotate smooth way me hota hai */}
                   <ChevronDown size={17} className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute top-full mt-1 w-full rounded-xl border border-[#d3e7e0] bg-white shadow-lg z-10">
                     <button
                       type="button"
+                      // Is function se category reset ho kar "All Categories" pe aati hai.
                       onClick={() => {
                         setSelectedCategory(null);
                         setIsDropdownOpen(false);
@@ -160,6 +187,7 @@ export default function BrowseMedicine() {
                       <button
                         key={category.label}
                         type="button"
+                        // Category select karte hi list usi hisab se filter ho jaati hai.
                         onClick={() => {
                           setSelectedCategory(category.label);
                           setIsDropdownOpen(false);
@@ -173,19 +201,23 @@ export default function BrowseMedicine() {
                 )}
               </div>
 
+              {/* Sort dropdown: yaha expiry date ke hisab se order change hota hai */}
               <div className="relative sort-dropdown">
                 <button
                   type="button"
+                  // onClick function sort dropdown open/close karta hai.
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                   className="flex items-center justify-between rounded-xl border border-[#d3e7e0] bg-white px-4 py-3 text-sm md:text-base text-[#3d5f57] w-full"
                 >
                   {sortOrder === 'asc' ? 'Earliest First' : sortOrder === 'desc' ? 'Latest First' : 'Sort by Expiry Date'}
+                  {/* transition-transform = arrow rotate animation */}
                   <ChevronDown size={17} className={`transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isSortDropdownOpen && (
                   <div className="absolute top-full mt-1 w-full rounded-xl border border-[#d3e7e0] bg-white shadow-lg z-10">
                     <button
                       type="button"
+                      // Is function se sorting remove (None) ho jaati hai.
                       onClick={() => {
                         setSortOrder(null);
                         setIsSortDropdownOpen(false);
@@ -196,6 +228,7 @@ export default function BrowseMedicine() {
                     </button>
                     <button
                       type="button"
+                      // Ascending: sabse jaldi expiry wali medicine pehle.
                       onClick={() => {
                         setSortOrder('asc');
                         setIsSortDropdownOpen(false);
@@ -206,6 +239,7 @@ export default function BrowseMedicine() {
                     </button>
                     <button
                       type="button"
+                      // Descending: sabse baad expiry wali medicine pehle.
                       onClick={() => {
                         setSortOrder('desc');
                         setIsSortDropdownOpen(false);
@@ -218,6 +252,7 @@ export default function BrowseMedicine() {
                 )}
               </div>
 
+              {/* Clear All: saare filters aur search ko ek click me reset karta hai */}
               <button
                 type="button"
                 onClick={() => {
@@ -225,6 +260,7 @@ export default function BrowseMedicine() {
                   setSortOrder(null);
                   setSearchQuery('');
                 }}
+                // transition = button color smooth way me change hota hai hover pe.
                 className="rounded-xl bg-[#37aa82] px-4 py-3 text-sm md:text-base font-medium text-white hover:bg-[#2e9d79] transition"
               >
                 Clear All
@@ -232,6 +268,7 @@ export default function BrowseMedicine() {
             </div>
           </div>
 
+          {/* Right side image sirf visual support ke liye hai */}
           <img
             src="/buy medicine.png"
             alt="Medicine display"
@@ -245,6 +282,7 @@ export default function BrowseMedicine() {
               filteredMedicines.map((item, index) => (
               <article
                 key={item.name}
+                // Har card ka ref GSAP animation ko target dene ke liye store hota hai.
                 ref={(el) => {
                   cardsRef.current[index] = el;
                 }}
@@ -275,10 +313,12 @@ export default function BrowseMedicine() {
                     </div>
                     <button
                       type="button"
+                      // Buy button pe click karte hi selected medicine set hoti hai aur modal open hota hai.
                       onClick={() => {
                         setSelectedMedicine(item);
                         setIsModalOpen(true);
                       }}
+                      // transition-opacity = hover pe halka transparency change smooth lagta hai.
                       className="rounded-xl bg-gradient-to-r from-[#37aa82] to-[#2e9d79] px-5 py-2.5 text-lg font-medium text-white hover:opacity-90 transition-opacity"
                     >
                       Buy Now
@@ -288,6 +328,7 @@ export default function BrowseMedicine() {
               </article>
             ))
             ) : (
+              // Agar filter ke baad koi medicine nahi milti to yeh message show hota hai.
               <div className="col-span-full text-center py-12">
                 <p className="text-lg text-[#5b7570]">No medicines found matching your criteria.</p>
                 <p className="text-sm text-[#8aa39c] mt-2">Try adjusting your search or filters.</p>
@@ -296,6 +337,7 @@ export default function BrowseMedicine() {
           </div>
         </section>
 
+        {/* Pagination area ka bhi GSAP load animation hota hai (upar useLayoutEffect me). */}
         <div ref={paginationRef} className="mt-6 inline-flex overflow-hidden rounded-xl border border-[#d3e8e1] bg-white/80">
           <button type="button" className="px-4 py-3 text-[#597a72] hover:bg-[#ecf7f3]">
             <ChevronLeft size={20} />
@@ -316,10 +358,12 @@ export default function BrowseMedicine() {
       <BuyNowModal
         medicine={selectedMedicine}
         isOpen={isModalOpen}
+        // onClose function modal band karta hai aur selected medicine clear karta hai.
         onClose={() => {
           setIsModalOpen(false);
           setSelectedMedicine(null);
         }}
+        // onOrderSuccess function order successful hone ke baad run hota hai.
         onOrderSuccess={() => {
           // Optional: refresh medicines list or show success message
           console.log('Order placed successfully!');

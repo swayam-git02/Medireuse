@@ -4,20 +4,26 @@ import Navbar from '../components/navbar';
 import authAPI, { adminAPI } from '../services/api';
 
 export default function Admin() {
+  // navigate ka use page change karne ke liye hota hai.
   const navigate = useNavigate();
+  // users me backend se aane wali user list store hoti hai.
   const [users, setUsers] = useState([]);
+  // loading true rahega jab tak data aa nahi jata.
   const [loading, setLoading] = useState(true);
+  // agar API fail ho to error message yaha aata hai.
   const [error, setError] = useState();
 
+  // currently login user ki info local storage se read hoti hai.
   const user = authAPI.getStoredUser();
 
   useEffect(() => {
-    // redirect non-admins away
+    // Yeh check karta hai ki sirf admin hi yeh page dekh sake.
     if (!user || user.role !== 'admin') {
       navigate('/');
       return;
     }
 
+    // adminAPI.getUsers function backend se saare users laata hai.
     adminAPI
       .getUsers()
       .then((data) => {
@@ -26,6 +32,7 @@ export default function Admin() {
       })
       .catch((err) => {
         console.error('Failed to load users', err);
+        // Agar issue aaye to user-friendly error set karte hain.
         setError(err.message || 'Unable to load');
         setLoading(false);
       });
@@ -36,8 +43,11 @@ export default function Admin() {
       <Navbar showAuthButtons={false} showProfileIcon={true} mode="dashboard" />
       <main className="p-6 max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
-        {loading && <p>Loading users…</p>}
+        {/* Loading state: jab tak list load ho rahi ho */}
+        {loading && <p>Loading users...</p>}
+        {/* Error state: agar data fetch fail ho */}
         {error && <p className="text-red-600">{error}</p>}
+        {/* Data state: users list table me show hoti hai */}
         {!loading && !error && (
           <table className="w-full border-collapse">
             <thead>
@@ -48,6 +58,7 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
+              {/* map function har user ko table ki ek row me convert karta hai */}
               {users.map((u) => (
                 <tr key={u._id} className="border-t">
                   <td className="p-2">{u.name}</td>
