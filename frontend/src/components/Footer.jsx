@@ -13,6 +13,7 @@ import {
 export default function Footer() {
   return (
     <footer className="relative mt-20 overflow-hidden bg-[#ecf8f2] text-[#1f2937]">
+      {/* Decorative blurred circles sirf visual background ke liye */}
       <div className="pointer-events-none absolute -top-20 -right-24 h-72 w-72 rounded-full bg-[#86efac]/30 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-[#7dd3fc]/25 blur-3xl" />
 
@@ -33,6 +34,7 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Link
               to="/signup"
+              // transition = hover pe button color smooth change.
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold px-5 py-3 transition"
             >
               Get Started
@@ -40,6 +42,7 @@ export default function Footer() {
             </Link>
             <Link
               to="/login"
+              // transition = border/background hover state smooth dikhta hai.
               className="inline-flex items-center justify-center rounded-xl border border-[#b8d8cb] hover:border-[#93c5b3] hover:bg-white px-5 py-3 font-medium transition"
             >
               Login
@@ -57,6 +60,7 @@ export default function Footer() {
             <div className="mt-5 flex gap-3 text-slate-600">
               <a
                 href="#"
+                // transition = social icon hover pe smooth background change.
                 className="rounded-lg border border-[#b8d8cb] p-2 hover:bg-white transition"
                 aria-label="Facebook"
               >
@@ -64,6 +68,7 @@ export default function Footer() {
               </a>
               <a
                 href="#"
+                // transition = social icon hover effect.
                 className="rounded-lg border border-[#b8d8cb] p-2 hover:bg-white transition"
                 aria-label="Twitter"
               >
@@ -71,6 +76,7 @@ export default function Footer() {
               </a>
               <a
                 href="#"
+                // transition = social icon hover effect.
                 className="rounded-lg border border-[#b8d8cb] p-2 hover:bg-white transition"
                 aria-label="LinkedIn"
               >
@@ -83,6 +89,7 @@ export default function Footer() {
             <h3 className="font-semibold text-[#1f2937] mb-3">Platform</h3>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>
+                {/* transition = text color hover pe smoothly badalta hai */}
                 <a href="#" className="hover:text-green-700 transition">How It Works</a>
               </li>
               <li>
@@ -101,6 +108,7 @@ export default function Footer() {
             <h3 className="font-semibold text-[#1f2937] mb-3">Quick Links</h3>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>
+                {/* transition = text hover soft feel deta hai */}
                 <Link to="/" className="hover:text-green-700 transition">Home</Link>
               </li>
               <li>
@@ -137,6 +145,7 @@ export default function Footer() {
 
       <div className="border-t border-[#cde7db]">
         <div className="max-w-7xl mx-auto px-6 py-4 text-sm text-slate-600 flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
+          {/* new Date function se current year auto show hota hai */}
           <p>Copyright {new Date().getFullYear()} MediReuse. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-green-700 transition">Privacy Policy</a>

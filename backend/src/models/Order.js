@@ -13,7 +13,7 @@ const orderSchema = new mongoose.Schema({
   },
   medicineType: {
     type: String,
-    enum: ['Tablet', 'Capsule', 'Syrup', 'Verified'],
+    enum: ['Tablet', 'Capsule', 'Syrup', 'Supplement', 'Other', 'Verified'],
     required: [true, 'Medicine type is required']
   },
   quantity: {
@@ -26,6 +26,11 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: [true, 'Price per unit is required'],
     min: [0, 'Price cannot be negative']
+  },
+  mrp: {
+    type: Number,
+    default: 0,
+    min: [0, 'MRP cannot be negative']
   },
   totalPrice: {
     type: Number,
@@ -56,6 +61,10 @@ const orderSchema = new mongoose.Schema({
     trim: true
   },
   paymentId: {
+    type: String,
+    trim: true
+  },
+  razorpayOrderId: {
     type: String,
     trim: true
   },

@@ -3,6 +3,7 @@ import { Recycle, IndianRupee, ShieldCheck } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Why choose cards ka content data.
 const items = [
   {
     title: "Reduce Medicine Waste",
@@ -25,9 +26,11 @@ const items = [
 ];
 
 export default function WhyChoose() {
+  // sectionRef se isi section ke animation targets scope me rehte hain.
   const sectionRef = useRef(null);
 
   useEffect(() => {
+    // Scroll based animation activate karne ke liye plugin register.
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -36,9 +39,11 @@ export default function WhyChoose() {
 
       if (!cards.length) return;
 
+      // Initial hidden state before animation starts.
       gsap.set(cards, { y: 26, opacity: 0 });
       gsap.set(badges, { scale: 0.85, opacity: 0 });
 
+      // Timeline me pehle cards, phir badges reveal hote hain.
       gsap
         .timeline({
           scrollTrigger: {
@@ -69,6 +74,7 @@ export default function WhyChoose() {
         );
     }, sectionRef);
 
+    // Cleanup for safe unmount.
     return () => ctx.revert();
   }, []);
 
@@ -88,6 +94,7 @@ export default function WhyChoose() {
             return (
               <div
                 key={i}
+                // transition + hover:-translate-y-2 = card hover pe smooth lift effect.
                 className="why-card bg-white border border-[#e4eaf2] rounded-2xl p-6 shadow-[0_6px_16px_rgba(18,34,56,0.08)] hover:-translate-y-2 hover:shadow-[0_12px_26px_rgba(18,34,56,0.14)] transition duration-300"
               >
                 <div

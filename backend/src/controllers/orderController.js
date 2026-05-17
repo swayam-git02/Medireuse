@@ -1,16 +1,103 @@
 import Order from '../models/Order.js';
-import User from '../models/User.js';
 import crypto from 'crypto';
+
+// @desc    Create a Razorpay order
+// @route   POST /api/orders/razorpay-order
+// @access  Private
+export const createRazorpayOrder = async (req, res) => {
+  try {
+    const { amount, currency = 'INR', receipt } = req.body;
+
+    const parsedAmount = Number(amount);
+
+    if (!parsedAmount || parsedAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid amount is required to create a Razorpay order'
+      });
+    }
+
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    const razorpaySecret = process.env.RAZORPAY_SECRET_KEY;
+
+    if (!razorpayKeyId || !razorpaySecret) {
+      return res.status(500).json({
+        success: false,
+        message: 'Razorpay keys are not configured on the server'
+      });
+    }
+
+    const response = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${razorpayKeyId}:${razorpaySecret}`).toString('base64')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: Math.round(parsedAmount * 100),
+        currency,
+        receipt: receipt || `receipt_${Date.now()}`
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        message: data?.error?.description || 'Failed to create Razorpay order',
+        error: data?.error
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      order: data,
+      keyId: razorpayKeyId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create Razorpay order',
+      error: error.message
+    });
+  }
+};
 
 // @desc    Create a new order
 // @route   POST /api/orders
 // @access  Private
 export const createOrder = async (req, res) => {
   try {
-    const { medicineName, medicineType, quantity, pricePerUnit, expiryDate, paymentMethod, shippingAddress, notes, paymentId, paymentSignature } = req.body;
+    const {
+      medicineName,
+      medicineType,
+      quantity,
+      pricePerUnit,
+      mrp,
+      expiryDate,
+      paymentMethod,
+      shippingAddress,
+      notes,
+      paymentId,
+      razorpayOrderId,
+      paymentSignature
+    } = req.body;
+
+    const parsedQuantity = Number(quantity);
+    const parsedPricePerUnit = Number(pricePerUnit);
+    const parsedMrp = mrp === undefined || mrp === null || mrp === '' ? parsedPricePerUnit : Number(mrp);
 
     // Validate required fields
-    if (!medicineName || !medicineType || !quantity || !pricePerUnit || !expiryDate || !paymentMethod || !shippingAddress) {
+    if (
+      !medicineName ||
+      !medicineType ||
+      !parsedQuantity ||
+      Number.isNaN(parsedPricePerUnit) ||
+      !expiryDate ||
+      !paymentMethod ||
+      !shippingAddress
+    ) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields'
@@ -18,41 +105,37 @@ export const createOrder = async (req, res) => {
     }
 
     // Verify Razorpay payment signature if payment method is card/upi
-    if ((paymentMethod === 'card' || paymentMethod === 'upi') && paymentId) {
-      if (!paymentSignature) {
+    if (paymentMethod === 'card' || paymentMethod === 'upi') {
+      if (!paymentId || !paymentSignature || !razorpayOrderId) {
         return res.status(400).json({
           success: false,
-          message: 'Payment signature is missing. Please contact support if the issue persists.'
+          message: 'Razorpay payment details are incomplete. Please try again.'
         });
       }
-      
-      try {
-        const razorpaySecret = process.env.RAZORPAY_SECRET_KEY;
-        if (!razorpaySecret) {
-          console.error('Razorpay secret key not configured');
-          // Don't block payment if secret is not configured, just log it
-          console.warn('Warning: Payment verification skipped due to missing secret key');
-        } else {
-          // For basic checkout without server-side order creation,
-          // we verify just the payment_id with signature
-          const hmac = crypto.createHmac('sha256', razorpaySecret);
-          hmac.update(paymentId.toString());
-          const generated_signature = hmac.digest('hex');
 
-          if (generated_signature !== paymentSignature) {
-            console.warn(`Signature verification failed. Expected: ${generated_signature}, Got: ${paymentSignature}`);
-            // Log warning but don't block - Razorpay signature verification can be complex
-            // In production, you should verify this properly with order_id as well
-          }
-        }
-      } catch (error) {
-        console.error('Payment verification error:', error);
-        // Don't block order creation due to verification errors
+      const razorpaySecret = process.env.RAZORPAY_SECRET_KEY;
+      if (!razorpaySecret) {
+        return res.status(500).json({
+          success: false,
+          message: 'Razorpay secret key is not configured on the server'
+        });
+      }
+
+      const generatedSignature = crypto
+        .createHmac('sha256', razorpaySecret)
+        .update(`${razorpayOrderId}|${paymentId}`)
+        .digest('hex');
+
+      if (generatedSignature !== paymentSignature) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment verification failed. Please try again.'
+        });
       }
     }
 
     // Validate quantity
-    if (quantity < 1 || quantity > 100) {
+    if (parsedQuantity < 1 || parsedQuantity > 100) {
       return res.status(400).json({
         success: false,
         message: 'Quantity must be between 1 and 100'
@@ -60,29 +143,45 @@ export const createOrder = async (req, res) => {
     }
 
     // Validate price
-    if (pricePerUnit < 0) {
+    if (parsedPricePerUnit < 0) {
       return res.status(400).json({
         success: false,
         message: 'Price cannot be negative'
       });
     }
 
+    if (Number.isNaN(parsedMrp) || parsedMrp < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'MRP cannot be negative'
+      });
+    }
+
+    if (parsedPricePerUnit > parsedMrp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Selling price cannot be greater than MRP'
+      });
+    }
+
     // Calculate total price
-    const totalPrice = quantity * pricePerUnit;
+    const totalPrice = parsedQuantity * parsedPricePerUnit;
 
     // Create order
     const order = await Order.create({
       buyer: req.user.id,
       medicineName,
       medicineType,
-      quantity,
-      pricePerUnit,
+      quantity: parsedQuantity,
+      pricePerUnit: parsedPricePerUnit,
+      mrp: parsedMrp,
       totalPrice,
       expiryDate,
       paymentMethod,
       shippingAddress,
       notes: notes || '',
       paymentId: paymentId || '',
+      razorpayOrderId: razorpayOrderId || '',
       paymentSignature: paymentSignature || ''
     });
 

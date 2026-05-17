@@ -3,17 +3,21 @@ import { Link } from "react-router-dom";
 import { gsap } from "gsap";
 
 export default function Hero() {
+  // Yeh refs GSAP animation ko exact elements target karne ke liye use hote hain.
   const headingRef = useRef(null);
   const subheadingRef = useRef(null);
   const primaryBtnRef = useRef(null);
   const secondaryBtnRef = useRef(null);
 
+  // Page load animation: heading, text aur buttons smooth entry lete hain.
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       if (!headingRef.current || !subheadingRef.current) return;
 
+      // timeline = animation sequence ko step-by-step chalana.
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
+      // 1) Heading slide + fade.
       tl.fromTo(
         headingRef.current,
         { y: 40, opacity: 0 },
@@ -24,6 +28,7 @@ export default function Hero() {
           clearProps: "opacity,transform",
         }
       ).fromTo(
+          // 2) Subheading heading ke turant baad animate hota hai.
           subheadingRef.current,
           { y: 24, opacity: 0 },
           {
@@ -35,6 +40,7 @@ export default function Hero() {
           "-=0.4"
         )
         .fromTo(
+          // 3) Dono CTA buttons stagger animation ke saath aate hain.
           [primaryBtnRef.current, secondaryBtnRef.current],
           { y: 18, opacity: 0 },
           {
@@ -48,6 +54,7 @@ export default function Hero() {
         );
     });
 
+    // Cleanup: component remove hote hi GSAP effects revert.
     return () => ctx.revert();
   }, []);
 
@@ -77,6 +84,7 @@ export default function Hero() {
             <Link
               to="/sell-medicine"
               ref={primaryBtnRef}
+              // transition + hover:scale-105 = button hover pe smooth zoom effect.
               className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105 inline-flex items-center justify-center"
             >
               Sell Medicines
@@ -84,6 +92,7 @@ export default function Hero() {
             <Link
               to="/buy-medicine"
               ref={secondaryBtnRef}
+              // transition + hover:scale-105 = second button ka smooth hover animation.
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transform transition duration-200 hover:scale-105"
             >
               Browse Medicines

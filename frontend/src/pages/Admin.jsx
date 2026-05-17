@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/navbar';
+import BackButton from '../components/BackButton.jsx';
 import authAPI, { adminAPI } from '../services/api';
 
 export default function Admin() {
+  // Admin page ka main kaam: sirf admin user ko allow karna aur users list dikhana.
   // navigate ka use page change karne ke liye hota hai.
   const navigate = useNavigate();
   // users me backend se aane wali user list store hoti hai.
@@ -17,6 +19,7 @@ export default function Admin() {
   const user = authAPI.getStoredUser();
 
   useEffect(() => {
+    // useEffect: page load hote hi permission check + users fetch dono ka flow chalata hai.
     // Yeh check karta hai ki sirf admin hi yeh page dekh sake.
     if (!user || user.role !== 'admin') {
       navigate('/');
@@ -41,8 +44,12 @@ export default function Admin() {
   return (
     <>
       <Navbar showAuthButtons={false} showProfileIcon={true} mode="dashboard" />
+      <div className="mx-auto mt-4 max-w-7xl px-4 md:px-6">
+        <BackButton />
+      </div>
       <main className="p-6 max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+        {/* Is page me koi special JS animation nahi hai; simple data listing UI hai. */}
         {/* Loading state: jab tak list load ho rahi ho */}
         {loading && <p>Loading users...</p>}
         {/* Error state: agar data fetch fail ho */}

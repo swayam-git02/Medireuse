@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CalendarDays, ClipboardList, LoaderCircle, LogOut, Mail, ShieldCheck, ShoppingBag, UserRound } from "lucide-react";
+import BackButton from "../components/BackButton.jsx";
 import authAPI from "../services/api";
 
 export default function Profile() {
+  // Profile page ka goal: logged-in user ki details dikhana aur quick actions dena.
   const navigate = useNavigate();
 
   // localStorage wale user se instant UI milta hai jab tak latest profile load ho.
@@ -12,6 +14,7 @@ export default function Profile() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // useEffect: page khulte hi login check + latest profile fetch chalata hai.
     if (!authAPI.isAuthenticated()) {
       navigate("/login", { state: { from: "/profile" } });
       return;
@@ -37,6 +40,7 @@ export default function Profile() {
   }, [navigate]);
 
   const profileInitials = useMemo(() => {
+    // useMemo: initials ko tabhi dobara calculate karta hai jab name badle.
     const name = user?.name?.trim();
     if (!name) return "U";
     return name
@@ -47,6 +51,7 @@ export default function Profile() {
   }, [user?.name]);
 
   const formatDate = (dateValue) => {
+    // formatDate: raw date ko normal readable date me convert karta hai.
     if (!dateValue) return "Not available";
     return new Date(dateValue).toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -56,6 +61,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
+    // handleLogout: auth clear karke user ko login page bhejta hai.
     authAPI.logout();
     navigate("/login");
   };
@@ -64,6 +70,7 @@ export default function Profile() {
     return (
       <main className="min-h-screen bg-[url('/sell-page-bg.png')] bg-cover bg-center px-4 pb-14 pt-4 md:px-8">
         <section className="mx-auto max-w-5xl rounded-[30px] border border-[#c9e2dc] bg-[#eaf8f4]/90 p-10 text-center shadow-[0_22px_44px_rgba(37,84,73,0.12)]">
+          {/* animate-spin = loading icon ko ghumakar progress animation dikhata hai */}
           <LoaderCircle size={40} className="mx-auto animate-spin text-[#2f7f68]" />
           <p className="mt-4 text-[#3d5f57]">Loading your profile...</p>
         </section>
@@ -73,6 +80,9 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-[url('/sell-page-bg.png')] bg-cover bg-center px-4 pb-14 pt-4 md:px-8">
+      <div className="mx-auto mb-4 max-w-7xl px-4 md:px-6">
+        <BackButton />
+      </div>
       <section className="mx-auto grid max-w-5xl gap-6 rounded-[30px] border border-[#c9e2dc] bg-[#eaf8f4]/90 p-6 shadow-[0_22px_44px_rgba(37,84,73,0.12)] md:grid-cols-[1.1fr_0.9fr] md:p-8">
         <article className="rounded-3xl border border-[#d6ebe4] bg-white/80 p-6">
           <div className="flex items-center gap-4">
@@ -126,6 +136,7 @@ export default function Profile() {
           <div className="mt-5 grid gap-3">
             <Link
               to="/orders"
+              // transition-colors = hover par card ka background smoothly change hota hai.
               className="flex items-center justify-between rounded-xl border border-[#d7e9e3] bg-[#f8fcfb] px-4 py-3 text-[#1f3d3a] transition-colors hover:bg-[#edf7f4]"
             >
               <span className="flex items-center gap-2 text-sm font-medium">
@@ -137,6 +148,7 @@ export default function Profile() {
 
             <Link
               to="/my-listings"
+              // transition-colors = hover par quick action card soft highlight leta hai.
               className="flex items-center justify-between rounded-xl border border-[#d7e9e3] bg-[#f8fcfb] px-4 py-3 text-[#1f3d3a] transition-colors hover:bg-[#edf7f4]"
             >
               <span className="flex items-center gap-2 text-sm font-medium">
@@ -150,6 +162,7 @@ export default function Profile() {
           <button
             type="button"
             onClick={handleLogout}
+            // transition-colors = logout button hover par red shade smoothly badalta hai.
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 font-medium text-red-600 transition-colors hover:bg-red-100"
           >
             <LogOut size={16} />

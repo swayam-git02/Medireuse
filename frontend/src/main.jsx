@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./index.css";
 
+// Yeh entry point hai: app ko root div me mount karke router enable karta hai.
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />

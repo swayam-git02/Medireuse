@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Step-by-step process data jo UI me map hota hai.
 const steps = [
   {
     step: "1",
@@ -30,10 +31,12 @@ const steps = [
 ];
 
 export default function HowItWorks() {
+  // Refs animation scope aur progress line target ke liye.
   const sectionRef = useRef(null);
   const progressRef = useRef(null);
 
   useEffect(() => {
+    // ScrollTrigger ko GSAP ke saath register karna.
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -41,12 +44,14 @@ export default function HowItWorks() {
       const desktopBadges = gsap.utils.toArray(".how-badge-desktop");
       const mobileBadges = gsap.utils.toArray(".how-badge-mobile");
 
+      // Initial hidden state set karke entry animation prepare karte hain.
       gsap.set(progressRef.current, { scaleX: 0, transformOrigin: "left center" });
       gsap.set(stepCards, { y: 18, opacity: 0 });
       gsap.set(desktopBadges, { scale: 0.85, opacity: 0 });
       gsap.set(mobileBadges, { scale: 0.85, opacity: 0 });
 
       const progressDuration = 2.6;
+      // Single timeline me progress bar + badges + cards synced animation.
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -57,12 +62,14 @@ export default function HowItWorks() {
         defaults: { ease: "power3.out" },
       });
 
+      // Progress line left se right fill hoti hai.
       tl.to(progressRef.current, {
         scaleX: 1,
         duration: progressDuration,
         ease: "power1.inOut",
       });
 
+      // Har step badge/card ko sequence me reveal karte hain.
       stepCards.forEach((card, i) => {
         const at = (i / stepCards.length) * progressDuration + 0.1;
 
@@ -88,6 +95,7 @@ export default function HowItWorks() {
       });
     }, sectionRef);
 
+    // Cleanup: unmount par GSAP context cleanup.
     return () => ctx.revert();
   }, []);
 

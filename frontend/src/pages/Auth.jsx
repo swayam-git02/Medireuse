@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/navbar";
+import BackButton from "../components/BackButton.jsx";
 import { authAPI } from "../services/api";
 
 export default function Auth({ initialMode = "login" }) {
+  // Auth page ka purpose: ek hi screen par Login aur Signup dono handle karna.
   // navigate ka use successful login ke baad next page pe bhejne ke liye hota hai.
   const navigate = useNavigate();
   // location se pata chalta hai user kis page se yaha aaya tha.
@@ -25,7 +27,8 @@ export default function Auth({ initialMode = "login" }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const data = await authAPI.login({
+      // authAPI.login function backend se credentials verify karta hai.
+      await authAPI.login({
         email: loginForm.email,
         password: loginForm.password,
       });
@@ -42,6 +45,7 @@ export default function Auth({ initialMode = "login" }) {
   const handleSignup = async (e) => {
     e.preventDefault();
     try {
+      // authAPI.register function naya account create karta hai.
       await authAPI.register({
         name: signupForm.name,
         email: signupForm.email,
@@ -71,6 +75,10 @@ export default function Auth({ initialMode = "login" }) {
         {/* Halka overlay readability improve karta hai */}
         <div className="absolute inset-0 bg-white/10" />
 
+        <div className="relative mx-auto max-w-7xl px-4 md:px-6">
+          <BackButton />
+        </div>
+
         <div className="relative mx-auto flex min-h-[calc(100vh-96px)] w-full max-w-7xl items-center justify-center md:justify-end md:pr-8 lg:pr-16">
           <div className="w-full max-w-md rounded-3xl border border-white/25 bg-white/10 p-3 backdrop-blur-sm shadow-[0_18px_60px_rgba(12,24,18,0.45)]">
             <div className="mb-4 grid grid-cols-2 rounded-2xl bg-white/20 p-1 text-sm font-semibold text-white">
@@ -78,7 +86,7 @@ export default function Auth({ initialMode = "login" }) {
                 type="button"
                 // onClick se login tab active hota hai.
                 onClick={() => setIsSignup(false)}
-                // transition = tab color smooth tareeke se change hota hai.
+                // transition = tab ka color/feel dheere smooth tareeke se badalta hai (sudden jump nahi hota).
                 className={`rounded-xl px-3 py-2 transition ${!isSignup ? "bg-white text-emerald-700" : "text-white/85"}`}
               >
                 Login
@@ -87,14 +95,14 @@ export default function Auth({ initialMode = "login" }) {
                 type="button"
                 // onClick se signup tab active hota hai.
                 onClick={() => setIsSignup(true)}
-                // transition = tab switch visual smooth lagta hai.
+                // transition = tab change ka visual smooth lagta hai.
                 className={`rounded-xl px-3 py-2 transition ${isSignup ? "bg-white text-emerald-700" : "text-white/85"}`}
               >
                 Sign Up
               </button>
             </div>
 
-            {/* auth-flip-card + is-signup class se login/signup card flip animation hota hai */}
+            {/* auth-flip-card + is-signup class = CSS flip animation, jisse card palat kar form change dikhta hai */}
             <div className="auth-scene">
               <div className={`auth-flip-card ${isSignup ? "is-signup" : ""}`}>
                 {/* Login form */}
@@ -110,7 +118,7 @@ export default function Auth({ initialMode = "login" }) {
                       value={loginForm.email}
                       // onChange function typing ke saath email state update karta hai.
                       onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                      // transition + focus classes se border/ring smooth change hota hai.
+                      // transition + focus classes = input pe click karte hi border/ring softly highlight hota hai.
                       className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       required
                     />
@@ -120,12 +128,13 @@ export default function Auth({ initialMode = "login" }) {
                       value={loginForm.password}
                       // onChange function typing ke saath password state update karta hai.
                       onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                      // transition + focus classes se border/ring smooth change hota hai.
+                      // transition + focus classes = input active hone ka smooth visual feedback.
                       className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       required
                     />
                   </div>
 
+                  {/* transition + hover:bg = button hover par color smooth tareeke se dark hota hai */}
                   <button className="mt-6 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700">
                     Login
                   </button>
@@ -151,6 +160,7 @@ export default function Auth({ initialMode = "login" }) {
                       value={signupForm.name}
                       // onChange function typing ke saath name state update karta hai.
                       onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
+                      // transition + focus classes = field select hone par smooth highlight.
                       className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       required
                     />
@@ -160,6 +170,7 @@ export default function Auth({ initialMode = "login" }) {
                       value={signupForm.email}
                       // onChange function typing ke saath email state update karta hai.
                       onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                      // transition + focus classes = field interaction soft lagti hai.
                       className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       required
                     />
@@ -169,11 +180,13 @@ export default function Auth({ initialMode = "login" }) {
                       value={signupForm.password}
                       // onChange function typing ke saath password state update karta hai.
                       onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                      // transition + focus classes = user ko clear visual cue milta hai ki input active hai.
                       className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"
                       required
                     />
                   </div>
 
+                  {/* transition + hover:bg = signup button hover pe smoothly shade change karta hai */}
                   <button className="mt-6 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-700">
                     Sign Up
                   </button>

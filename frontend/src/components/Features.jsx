@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+// Features cards ka static content data.
 const features = [
   {
     title: "Submit Medicines",
@@ -26,9 +27,11 @@ const features = [
 ];
 
 export default function Features() {
+  // sectionRef se isi section ke andar GSAP target scope limit hota hai.
   const sectionRef = useRef(null);
 
   useEffect(() => {
+    // ScrollTrigger plugin register karna zaroori hota hai.
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
@@ -36,9 +39,11 @@ export default function Features() {
       const icons = gsap.utils.toArray(".feature-icon", sectionRef.current);
       if (!cards.length) return;
 
+      // Initial state: cards/icons hidden + below position.
       gsap.set(cards, { y: 42, opacity: 0 });
       gsap.set(icons, { scale: 0.75, opacity: 0 });
 
+      // Har card scroll pe alag-alag entry animation leta hai.
       cards.forEach((card, i) => {
         const icon = icons[i];
         const delay = i * 0.08;
@@ -54,6 +59,7 @@ export default function Features() {
           defaults: { ease: "power3.out" },
         });
 
+        // Card ka slide-up + fade-in.
         tl.to(card, {
           y: 0,
           opacity: 1,
@@ -62,6 +68,7 @@ export default function Features() {
         });
 
         if (icon) {
+          // Icon ka pop-in effect.
           tl.to(
             icon,
             {
@@ -76,6 +83,7 @@ export default function Features() {
       });
     }, sectionRef);
 
+    // Cleanup: animation context revert.
     return () => ctx.revert();
   }, []);
 
@@ -92,9 +100,11 @@ export default function Features() {
         {features.map((item, i) => (
           <div
             key={i}
+            // transition + hover:-translate-y-2 = card hover pe smoothly lift hota hai.
             className="feature-card group bg-white rounded-2xl border border-[#dbe8f2] p-5 md:p-6 shadow-[0_6px_16px_rgba(15,40,70,0.06)] hover:shadow-[0_10px_24px_rgba(15,40,70,0.12)] hover:-translate-y-2 transition duration-300"
           >
             <div
+              // transition + group-hover:scale-110 = icon hover pe halka zoom effect.
               className="feature-icon w-24 h-24 mx-auto flex items-center justify-center transition duration-300 group-hover:scale-110"
             >
               <img

@@ -1,67 +1,125 @@
 import { useLayoutEffect, useRef, useState, useEffect } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Package, Search } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { gsap } from "gsap";
 import BuyNowModal from "../components/BuyNowModal.jsx";
+import BackButton from "../components/BackButton.jsx";
+import { medicineAPI } from "../services/api.js";
 
-// Yeh category list dropdown me dikhayi jaati hai.
-const categories = [
-  { label: "Tablets", count: 120 },
-  { label: "Syrups", count: 53 },
-  { label: "Capsules", count: 68 },
-  { label: "Supplements", count: 42 },
-];
-
-// Yeh sample medicine data hai jo cards me render hota hai.
-const medicines = [
-  { name: "Paracetamol", type: "Tablet", expiry: "2025-08-12", price: 120, qty: 20, verified: false },
-  { name: "Amoxicilin 250mg", type: "Capsule", expiry: "2024-11-20", price: 80, qty: 15, verified: false },
-  { name: "Vitamin C 500mg", type: "Verified", expiry: "2025-06-30", price: 200, qty: 25, verified: true },
-  { name: "Pantoprazole 40mg", type: "Tablet", expiry: "2024-10-15", price: 100, qty: 10, verified: false },
-  { name: "Cough Syrup", type: "Syrup", expiry: "2025-01-05", price: 80, qty: 8, verified: false },
-  { name: "Metformin 500mg", type: "Verified", expiry: "2026-03-10", price: 70, qty: 30, verified: true },
-  { name: "Dolo 650", type: "Tablet", expiry: "2025-12-10", price: 90, qty: 18, verified: false },
-  { name: "Cetirizine", type: "Tablet", expiry: "2025-09-01", price: 65, qty: 22, verified: false },
-  { name: "Multivitamins", type: "Capsule", expiry: "2026-02-21", price: 130, qty: 12, verified: false },
-];
+// normalizeMedicine: backend ka raw data ko UI card ke simple readable format me convert karta hai.
+const normalizeMedicine = (medicine) => ({
+  id: medicine?._id || medicine?.id || `${medicine?.medicineName}-${medicine?.expiryDate}`,
+  name: medicine?.medicineName || "",
+  salt: medicine?.medicineSalt || "",
+  description: medicine?.shortDescription || "",
+  type: medicine?.medicineType || "Other",
+  expiry: medicine?.expiryDate || "",
+  price: Number(medicine?.pricePerUnit ?? 0),
+  mrp: Number(medicine?.mrp ?? medicine?.pricePerUnit ?? 0),
+  qty: Number(medicine?.quantity ?? 1),
+  verified: medicine?.medicineType === "Verified",
+  imageUrl: medicine?.imageUrl || "/buy medicine.png",
+});
 
 export default function BrowseMedicine() {
+  // Browse page ka main kaam: backend listings dikhana + search/filter/sort dena.
   // In refs ka use animation ke liye hota hai, taaki hum exact section ko animate kar sakein.
   const pageRef = useRef(null);
   const headerRef = useRef(null);
   const cardsRef = useRef([]);
   const paginationRef = useRef(null);
 
+  const [medicines, setMedicines] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
+
   // User ne kaunsa filter select kiya, wo yaha store hota hai.
   const [selectedCategory, setSelectedCategory] = useState(null);
   // 'asc' = jaldi expiry pehle, 'desc' = late expiry pehle.
   const [sortOrder, setSortOrder] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // categories list dynamic hai: jo medicine types backend se aaye wahi dropdown me ban jate hain.
+  const categories = Object.entries(
+    medicines.reduce((acc, medicine) => {
+      const label = medicine.type || "Other";
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
+    }, {})
+  )
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  // fetchMedicines function public medicine listings backend se nikaal kar state me set karta hai.
+  const fetchMedicines = async () => {
+    setIsLoading(true);
+    setFetchError("");
+    try {
+      const response = await medicineAPI.getAllMedicines();
+      const list = Array.isArray(response?.medicines) ? response.medicines : [];
+      setMedicines(list.map(normalizeMedicine));
+    } catch (error) {
+      setFetchError(error.message || "Failed to load medicines.");
+      setMedicines([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Page khulte hi data load karte hain.
+    fetchMedicines();
+  }, []);
+
+  useEffect(() => {
+    const removeDeletedMedicine = (deletedId) => {
+      if (!deletedId) return;
+      setMedicines((prev) => prev.filter((medicine) => medicine.id !== deletedId));
+    };
+
+    const handleMedicineDeleted = (event) => {
+      removeDeletedMedicine(event?.detail?.id);
+    };
+
+    const handleStorageUpdate = (event) => {
+      if (event.key !== "medireuse_deleted_medicine" || !event.newValue) return;
+      try {
+        const payload = JSON.parse(event.newValue);
+        removeDeletedMedicine(payload?.id);
+      } catch {
+        // Ignore malformed localStorage payloads.
+      }
+    };
+
+    window.addEventListener("medicine:deleted", handleMedicineDeleted);
+    window.addEventListener("storage", handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener("medicine:deleted", handleMedicineDeleted);
+      window.removeEventListener("storage", handleStorageUpdate);
+    };
+  }, []);
+
   // Yeh main function hai jo data ko filter + search + sort karke final list return karta hai.
   const getFilteredMedicines = () => {
     // Start me saari medicines lete hain.
-    let filtered = medicines;
+    let filtered = [...medicines];
 
     // Agar category select hui hai to us type ki medicines hi rakhenge.
     if (selectedCategory) {
-      // UI category ko actual data type se map kar rahe hain.
-      const typeMap = {
-        Tablets: 'Tablet',
-        Syrups: 'Syrup',
-        Capsules: 'Capsule',
-        Supplements: 'Verified'
-      };
-      const targetType = typeMap[selectedCategory];
-      filtered = filtered.filter(m => m.type === targetType);
+      filtered = filtered.filter((medicine) => medicine.type === selectedCategory);
     }
 
     // Search box me jo text user likhega uske hisab se naam match karke filter karenge.
     if (searchQuery.trim()) {
-      filtered = filtered.filter(m => m.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (medicine) =>
+          medicine.name.toLowerCase().includes(query) || medicine.salt.toLowerCase().includes(query)
+      );
     }
 
     // Expiry date ke hisab se sorting (ascending ya descending) karte hain.
@@ -69,7 +127,7 @@ export default function BrowseMedicine() {
       filtered = [...filtered].sort((a, b) => {
         const dateA = new Date(a.expiry);
         const dateB = new Date(b.expiry);
-        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
       });
     }
     return filtered;
@@ -80,18 +138,18 @@ export default function BrowseMedicine() {
   // Yeh function dropdown ke bahar click hote hi dropdown close kar deta hai.
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown') && !event.target.closest('.sort-dropdown')) {
+      if (!event.target.closest(".dropdown") && !event.target.closest(".sort-dropdown")) {
         setIsDropdownOpen(false);
         setIsSortDropdownOpen(false);
       }
     };
     if (isDropdownOpen || isSortDropdownOpen) {
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     }
-    return () => document.removeEventListener('click', handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [isDropdownOpen, isSortDropdownOpen]);
 
-  // Yeh GSAP animation wala part hai: page load pe header, cards aur pagination smooth entry lete hain.
+  // Yeh GSAP animation wala part hai: page load pe header/cards/pagination softly appear hote hain.
   useLayoutEffect(() => {
     cardsRef.current = cardsRef.current.filter(Boolean);
 
@@ -100,7 +158,7 @@ export default function BrowseMedicine() {
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (prefersReducedMotion) return;
 
-      // Timeline ka matlab: ek ke baad ek animation sequence me chalana.
+      // Timeline ka matlab: ek ke baad ek animation steps chalana.
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
       // 1) Header fade + slide in.
@@ -108,9 +166,11 @@ export default function BrowseMedicine() {
         headerRef.current,
         { opacity: 0, y: 26 },
         { opacity: 1, y: 0, duration: 0.55, clearProps: "opacity,transform" }
-      )
-        // 2) Cards fade + slide in with stagger (ek-ek karke).
-        .fromTo(
+      );
+
+      if (cardsRef.current.length > 0) {
+        // 2) Cards fade + slide in with stagger (ek-ek karke aate hain).
+        tl.fromTo(
           cardsRef.current,
           { opacity: 0, y: 28 },
           {
@@ -121,21 +181,26 @@ export default function BrowseMedicine() {
             clearProps: "opacity,transform",
           },
           "-=0.25"
-        )
-        // 3) Pagination last me softly appear hota hai.
-        .fromTo(
-          paginationRef.current,
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: 0.35, clearProps: "opacity,transform" },
-          "-=0.18"
         );
+      }
+
+      // 3) Pagination last me softly appear hota hai.
+      tl.fromTo(
+        paginationRef.current,
+        { opacity: 0, y: 14 },
+        { opacity: 1, y: 0, duration: 0.35, clearProps: "opacity,transform" },
+        "-=0.18"
+      );
     }, pageRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [filteredMedicines.length, isLoading, fetchError]);
 
   return (
     <main ref={pageRef} className="min-h-screen bg-[url('/sell-page-bg.png')] bg-cover bg-center px-4 pb-14 pt-4 md:px-8">
+      <div className="mx-auto mb-4 max-w-7xl px-4 md:px-6">
+        <BackButton />
+      </div>
       <section className="mx-auto max-w-7xl rounded-[30px] border border-[#c9e2dc] bg-[#eaf8f4]/90 p-6 shadow-[0_22px_44px_rgba(37,84,73,0.12)] md:p-8">
         <div ref={headerRef} className="grid gap-5 rounded-3xl border border-[#d6ebe4] bg-white/70 p-5 md:grid-cols-[1.45fr_auto] md:items-center">
           <div>
@@ -150,7 +215,7 @@ export default function BrowseMedicine() {
                 <Search size={17} />
                 <input
                   type="text"
-                  placeholder="Search medicine by name..."
+                  placeholder="Search medicine by name/salt..."
                   value={searchQuery}
                   // onChange function har typing pe state update karta hai.
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -158,7 +223,7 @@ export default function BrowseMedicine() {
                 />
               </label>
 
-              {/* Category dropdown: yaha category choose karte hi list filter ho jaati hai */}
+              {/* Category dropdown: category choose karte hi sirf us type wali medicines dikhti hain */}
               <div className="relative dropdown">
                 <button
                   type="button"
@@ -166,9 +231,9 @@ export default function BrowseMedicine() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center justify-between rounded-xl border border-[#d3e7e0] bg-white px-4 py-3 text-sm md:text-base text-[#3d5f57] w-full"
                 >
-                  {selectedCategory || 'All Categories'}
-                  {/* transition-transform = arrow icon rotate smooth way me hota hai */}
-                  <ChevronDown size={17} className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                  {selectedCategory || "All Categories"}
+                  {/* transition-transform = dropdown arrow smooth rotate hota hai */}
+                  <ChevronDown size={17} className={`transition-transform ${isDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
                 {isDropdownOpen && (
                   <div className="absolute top-full mt-1 w-full rounded-xl border border-[#d3e7e0] bg-white shadow-lg z-10">
@@ -194,14 +259,14 @@ export default function BrowseMedicine() {
                         }}
                         className="w-full px-4 py-2 text-left text-sm md:text-base text-[#3d5f57] hover:bg-[#ecf7f3] last:rounded-b-xl"
                       >
-                        {category.label}
+                        {category.label} ({category.count})
                       </button>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Sort dropdown: yaha expiry date ke hisab se order change hota hai */}
+              {/* Sort dropdown: expiry date ke order ko change karta hai */}
               <div className="relative sort-dropdown">
                 <button
                   type="button"
@@ -209,9 +274,9 @@ export default function BrowseMedicine() {
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                   className="flex items-center justify-between rounded-xl border border-[#d3e7e0] bg-white px-4 py-3 text-sm md:text-base text-[#3d5f57] w-full"
                 >
-                  {sortOrder === 'asc' ? 'Earliest First' : sortOrder === 'desc' ? 'Latest First' : 'Sort by Expiry Date'}
-                  {/* transition-transform = arrow rotate animation */}
-                  <ChevronDown size={17} className={`transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} />
+                  {sortOrder === "asc" ? "Earliest First" : sortOrder === "desc" ? "Latest First" : "Sort by Expiry Date"}
+                  {/* transition-transform = arrow rotate smooth animation */}
+                  <ChevronDown size={17} className={`transition-transform ${isSortDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
                 {isSortDropdownOpen && (
                   <div className="absolute top-full mt-1 w-full rounded-xl border border-[#d3e7e0] bg-white shadow-lg z-10">
@@ -230,7 +295,7 @@ export default function BrowseMedicine() {
                       type="button"
                       // Ascending: sabse jaldi expiry wali medicine pehle.
                       onClick={() => {
-                        setSortOrder('asc');
+                        setSortOrder("asc");
                         setIsSortDropdownOpen(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm md:text-base text-[#3d5f57] hover:bg-[#ecf7f3]"
@@ -241,7 +306,7 @@ export default function BrowseMedicine() {
                       type="button"
                       // Descending: sabse baad expiry wali medicine pehle.
                       onClick={() => {
-                        setSortOrder('desc');
+                        setSortOrder("desc");
                         setIsSortDropdownOpen(false);
                       }}
                       className="w-full px-4 py-2 text-left text-sm md:text-base text-[#3d5f57] hover:bg-[#ecf7f3] last:rounded-b-xl"
@@ -252,15 +317,15 @@ export default function BrowseMedicine() {
                 )}
               </div>
 
-              {/* Clear All: saare filters aur search ko ek click me reset karta hai */}
+              {/* Clear All: saare filters aur search ek click me reset */}
               <button
                 type="button"
                 onClick={() => {
                   setSelectedCategory(null);
                   setSortOrder(null);
-                  setSearchQuery('');
+                  setSearchQuery("");
                 }}
-                // transition = button color smooth way me change hota hai hover pe.
+                // transition = hover par button ka color soft/smooth change hota hai.
                 className="rounded-xl bg-[#37aa82] px-4 py-3 text-sm md:text-base font-medium text-white hover:bg-[#2e9d79] transition"
               >
                 Clear All
@@ -268,7 +333,7 @@ export default function BrowseMedicine() {
             </div>
           </div>
 
-          {/* Right side image sirf visual support ke liye hai */}
+          {/* Right side image sirf visual support/branding ke liye hai */}
           <img
             src="/buy medicine.png"
             alt="Medicine display"
@@ -277,64 +342,92 @@ export default function BrowseMedicine() {
         </div>
 
         <section className="mt-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filteredMedicines.length > 0 ? (
-              filteredMedicines.map((item, index) => (
-              <article
-                key={item.name}
-                // Har card ka ref GSAP animation ko target dene ke liye store hota hai.
-                ref={(el) => {
-                  cardsRef.current[index] = el;
-                }}
-                className="rounded-2xl border border-[#dcebe7] bg-white/80 p-4 shadow-[0_8px_18px_rgba(24,64,58,0.08)]"
+          {isLoading ? (
+            <div className="rounded-2xl border border-[#d6ebe4] bg-white/80 p-8 text-center">
+              <p className="text-base text-[#5b7570]">Loading medicines...</p>
+            </div>
+          ) : fetchError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+              <p className="text-sm text-red-700">{fetchError}</p>
+              <button
+                type="button"
+                onClick={fetchMedicines}
+                // hover:bg = retry button hover par halka dark shade leta hai.
+                className="mt-3 rounded-lg bg-red-100 px-4 py-2 text-sm text-red-700 hover:bg-red-200"
               >
-                <img
-                  src="/buy medicine.png"
-                  alt={item.name}
-                  className="h-40 w-full rounded-xl border border-[#d7e9e3] object-cover"
-                />
-                <div className="mt-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-xl font-medium text-[#223f3a]">{item.name}</h3>
-                    <span
-                      className={`rounded-full px-3 py-1 text-sm ${
-                        item.verified ? "bg-[#dff5eb] text-[#2b8f72]" : "bg-[#edf7f3] text-[#5e8d80]"
-                      }`}
-                    >
-                      {item.type}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-base text-[#6b8781]">Expir: {item.expiry}</p>
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredMedicines.length > 0 ? (
+                filteredMedicines.map((item, index) => (
+                  <article
+                    key={item.id}
+                    // Har card ka ref GSAP animation target set karne ke liye store hota hai.
+                    ref={(el) => {
+                      cardsRef.current[index] = el;
+                    }}
+                    className="rounded-2xl border border-[#dcebe7] bg-white/80 p-4 shadow-[0_8px_18px_rgba(24,64,58,0.08)]"
+                  >
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="h-40 w-full rounded-xl border border-[#d7e9e3] object-cover"
+                    />
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-xl font-medium text-[#223f3a]">{item.name}</h3>
+                        <span
+                          className={`rounded-full px-3 py-1 text-sm ${
+                            item.verified ? "bg-[#dff5eb] text-[#2b8f72]" : "bg-[#edf7f3] text-[#5e8d80]"
+                          }`}
+                        >
+                          {item.type}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-[#2f7f68]">Salt: {item.salt || "Not provided"}</p>
+                      <p className="mt-2 text-sm text-[#6b8781]">{item.description || "No description provided."}</p>
+                      <p className="mt-3 text-base text-[#6b8781]">Expiry: {item.expiry}</p>
 
-                  <div className="mt-4 flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-3xl leading-none text-[#1f3f39]">Rs {item.price}</p>
-                      <p className="mt-1 text-sm text-[#6a847f]">In Stock &nbsp; {item.qty}</p>
+                      <div className="mt-4 flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-3xl leading-none text-[#1f3f39]">Rs {item.price}</p>
+                          {item.mrp > item.price && (
+                            <p className="mt-1 text-sm text-[#6a847f]">
+                              <span className="line-through">MRP Rs {item.mrp}</span>
+                              <span className="ml-2 text-[#2f7f68]">
+                                Save {Math.round(((item.mrp - item.price) / item.mrp) * 100)}%
+                              </span>
+                            </p>
+                          )}
+                          <p className="mt-1 text-sm text-[#6a847f]">In Stock {item.qty}</p>
+                        </div>
+                        <button
+                          type="button"
+                          // Buy button pe click karte hi selected medicine set hoti hai aur modal open hota hai.
+                          onClick={() => {
+                            setSelectedMedicine(item);
+                            setIsModalOpen(true);
+                          }}
+                          // transition-opacity = hover pe button ka visual smooth change hota hai.
+                          className="rounded-xl bg-gradient-to-r from-[#37aa82] to-[#2e9d79] px-5 py-2.5 text-lg font-medium text-white hover:opacity-90 transition-opacity"
+                        >
+                          Buy Now
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      // Buy button pe click karte hi selected medicine set hoti hai aur modal open hota hai.
-                      onClick={() => {
-                        setSelectedMedicine(item);
-                        setIsModalOpen(true);
-                      }}
-                      // transition-opacity = hover pe halka transparency change smooth lagta hai.
-                      className="rounded-xl bg-gradient-to-r from-[#37aa82] to-[#2e9d79] px-5 py-2.5 text-lg font-medium text-white hover:opacity-90 transition-opacity"
-                    >
-                      Buy Now
-                    </button>
-                  </div>
+                  </article>
+                ))
+              ) : (
+                // Agar filter ke baad koi medicine nahi milti to yeh message show hota hai.
+                <div className="col-span-full py-12 text-center">
+                  <p className="text-lg text-[#5b7570]">No medicines found matching your criteria.</p>
+                  <p className="mt-2 text-sm text-[#8aa39c]">Try adjusting your search or filters.</p>
                 </div>
-              </article>
-            ))
-            ) : (
-              // Agar filter ke baad koi medicine nahi milti to yeh message show hota hai.
-              <div className="col-span-full text-center py-12">
-                <p className="text-lg text-[#5b7570]">No medicines found matching your criteria.</p>
-                <p className="text-sm text-[#8aa39c] mt-2">Try adjusting your search or filters.</p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Pagination area ka bhi GSAP load animation hota hai (upar useLayoutEffect me). */}
@@ -366,7 +459,7 @@ export default function BrowseMedicine() {
         // onOrderSuccess function order successful hone ke baad run hota hai.
         onOrderSuccess={() => {
           // Optional: refresh medicines list or show success message
-          console.log('Order placed successfully!');
+          console.log("Order placed successfully!");
         }}
       />
     </main>

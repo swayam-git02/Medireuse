@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
+import BackButton from '../components/BackButton.jsx';
 import { orderAPI } from '../services/api.js';
 
 // Har order status ke liye icon + color + label ka mapping yaha defined hai.
@@ -12,6 +13,7 @@ const statusConfig = {
 };
 
 export default function OrderHistory() {
+  // OrderHistory page: user ke placed orders dikhata hai aur cancel/details actions deta hai.
   // orders array me user ke saare orders store hote hain.
   const [orders, setOrders] = useState([]);
   // isLoading true hone par loading spinner dikhaya jata hai.
@@ -22,7 +24,7 @@ export default function OrderHistory() {
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
-    // Page open hote hi orders fetch karte hain.
+    // useEffect: page open hote hi orders list backend se laata hai.
     fetchOrders();
   }, []);
 
@@ -71,17 +73,12 @@ export default function OrderHistory() {
 
   return (
     <main className="min-h-screen bg-[url('/sell-page-bg.png')] bg-cover bg-center px-4 pb-14 pt-4 md:px-8">
+      <div className="mx-auto mb-4 max-w-7xl px-4 md:px-6">
+        <BackButton />
+      </div>
       <section className="mx-auto max-w-6xl rounded-[30px] border border-[#c9e2dc] bg-[#eaf8f4]/90 p-6 shadow-[0_22px_44px_rgba(37,84,73,0.12)] md:p-8">
         {/* Header section */}
         <div className="mb-8 grid gap-5 rounded-3xl border border-[#d6ebe4] bg-white/70 p-5 md:grid-cols-[auto_1fr] md:items-center">
-          <button
-            // Back button previous page pe le jata hai.
-            onClick={() => window.history.back()}
-            // transition-colors = hover pe text color smooth change hota hai.
-            className="text-[#3d5f57] transition-colors hover:text-[#1f3d3a] md:hidden"
-          >
-            <ArrowLeft size={24} />
-          </button>
           <div className="md:col-span-2">
             <h1 className="text-2xl font-semibold text-[#1f3d3a] md:text-3xl">My Orders</h1>
             <p className="mt-2 text-sm text-[#5b7570] md:text-base">
@@ -93,7 +90,7 @@ export default function OrderHistory() {
         {/* Loading state */}
         {isLoading && (
           <div className="py-12 text-center">
-            {/* animate-spin = round loader continuously ghoomta hai */}
+            {/* animate-spin = loading circle continuous rotation animation deta hai */}
             <div className="inline-block h-12 w-12 animate-spin rounded-full border-b-2 border-[#37aa82]"></div>
             <p className="mt-4 text-[#5b7570]">Loading your orders...</p>
           </div>
@@ -186,6 +183,7 @@ export default function OrderHistory() {
               <button
                 // Is button se modal band hota hai.
                 onClick={() => setSelectedOrder(null)}
+                // hover:text = cross icon hover par color change karta hai.
                 className="text-[#6b8781] hover:text-[#1f3d3a]"
               >
                 X
@@ -235,6 +233,12 @@ export default function OrderHistory() {
                     <span className="font-medium text-[#1f3d3a]">Rs {selectedOrder.pricePerUnit}</span>
                   </div>
                   <div className="flex justify-between">
+                    <span className="text-[#6b8781]">MRP per Unit</span>
+                    <span className="font-medium text-[#1f3d3a]">
+                      Rs {selectedOrder.mrp ?? selectedOrder.pricePerUnit}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
                     <span className="text-[#6b8781]">Expiry Date</span>
                     <span className="font-medium text-[#1f3d3a]">{selectedOrder.expiryDate}</span>
                   </div>
@@ -245,6 +249,11 @@ export default function OrderHistory() {
               <div className="rounded-lg border border-[#d6ebe4] bg-[#f0f8f5] p-3">
                 <p className="text-sm text-[#6b8781]">Total Amount</p>
                 <p className="text-2xl font-bold text-[#1f3d3a]">Rs {selectedOrder.totalPrice}</p>
+                {(selectedOrder.mrp ?? selectedOrder.pricePerUnit) > selectedOrder.pricePerUnit && (
+                  <p className="mt-1 text-xs text-[#2f7f68]">
+                    You saved Rs {(selectedOrder.mrp - selectedOrder.pricePerUnit) * selectedOrder.quantity}
+                  </p>
+                )}
               </div>
 
               {/* Delivery details */}

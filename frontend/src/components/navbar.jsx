@@ -2,21 +2,26 @@ import { Link, useLocation } from "react-router-dom";
 import authAPI from "../services/api";
 
 export default function Navbar({
+  // In props se control hota hai ki auth buttons/profile icon show hoga ya nahi.
   showAuthButtons = true,
   showProfileIcon = false,
   mode = "default",
   disableAnimations = false,
 }) {
+  // Current active route path nikalne ke liye useLocation.
   const location = useLocation();
 
+  // Local storage me save user details read karte hain.
   const user = authAPI.getStoredUser();
   const isAdmin = user?.role === 'admin';
+  // Name se profile initials ban rahe hain (example: Adarsh Kumar -> AK).
   const profileInitials = user?.name
     ?.split(" ")
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "U";
 
+  // Dashboard mode me dikhne wale navigation links.
   const dashboardLinks = [
     { label: "Dashboard", path: "/" },
     { label: "Buy Medicine", path: "/buy-medicine" },
@@ -25,9 +30,16 @@ export default function Navbar({
   ];
 
   if (isAdmin) {
-    // additional link for admins
+    // Admin user ko extra Admin page link milta hai.
     dashboardLinks.push({ label: 'Admin', path: '/admin' });
   }
+
+  const defaultLinks = [
+    { label: "Home", path: "/" },
+    { label: "About", path: "/about" },
+    { label: "Features", path: "/features" },
+    { label: "Contact", path: "/contact" },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 px-4 md:px-8 pt-4">
@@ -62,6 +74,7 @@ export default function Navbar({
                 <li key={link.label}>
                   <Link
                     to={link.path}
+                    // transition-colors = hover/active pe text color smooth change hota hai.
                     className={`relative pb-3 transition-colors ${
                       isActive ? "text-[#2d9d7f]" : "hover:text-[#2d9d7f]"
                     }`}
@@ -77,38 +90,23 @@ export default function Navbar({
           </ul>
         ) : (
           <ul className="hidden md:flex items-center gap-2 rounded-full border border-[#d8e7e0] bg-[#f4fbf7] p-1 text-gray-600 font-medium">
-            <li>
-              <Link
-                to="/"
-                className="px-4 py-2 rounded-full transition duration-200 hover:bg-white hover:text-[#0f5132] inline-block"
-              >
-                Home
-              </Link>
-            </li>
-            <li>
-              <a
-                href="#about"
-                className="px-4 py-2 rounded-full transition duration-200 hover:bg-white hover:text-[#0f5132] inline-block"
-              >
-                About
-              </a>
-            </li>
-            <li>
-              <a
-                href="#features"
-                className="px-4 py-2 rounded-full transition duration-200 hover:bg-white hover:text-[#0f5132] inline-block"
-              >
-                Features
-              </a>
-            </li>
-            <li>
-              <a
-                href="#contact"
-                className="px-4 py-2 rounded-full transition duration-200 hover:bg-white hover:text-[#0f5132] inline-block"
-              >
-                Contact
-              </a>
-            </li>
+            {defaultLinks.map((link) => {
+              const isActive = location.pathname === link.path;
+
+              return (
+                <li key={link.label}>
+                  <Link
+                    to={link.path}
+                    // transition = hover/active pe background-color smooth badalta hai.
+                    className={`inline-block rounded-full px-4 py-2 transition duration-200 ${
+                      isActive ? "bg-white text-[#0f5132]" : "hover:bg-white hover:text-[#0f5132]"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -116,6 +114,7 @@ export default function Navbar({
           <div className="flex items-center gap-2 md:gap-3">
             <Link
               to="/login"
+              // transition + hover:scale-105 se button hover pe smooth zoom feel deta hai.
               className={`px-4 md:px-5 py-2 rounded-xl border border-[#b9d7c6] text-[#0f5132] hover:bg-[#eef8f2] ${
                 disableAnimations ? "" : "transform transition duration-200 hover:scale-105"
               }`}
@@ -125,6 +124,7 @@ export default function Navbar({
 
             <Link
               to="/signup"
+              // transition + hover:scale-105 = signup button ka smooth hover animation.
               className={`bg-gradient-to-r from-green-600 to-emerald-500 text-white px-5 md:px-6 py-2 rounded-xl hover:from-green-700 hover:to-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.35)] ${
                 disableAnimations ? "" : "transform transition duration-200 hover:scale-105"
               }`}
@@ -139,6 +139,7 @@ export default function Navbar({
             <Link
               to="/profile"
               aria-label="Profile"
+              // transition-colors = profile icon hover pe color/background smooth badalta hai.
               className="h-11 w-11 rounded-full border border-[#b9d7c6] bg-[#eef8f2] text-[#0f5132] flex items-center justify-center transition-colors hover:bg-[#e2f2ea]"
             >
               <svg
