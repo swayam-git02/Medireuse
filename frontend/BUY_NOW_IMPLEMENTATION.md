@@ -14,8 +14,8 @@ The "Buy Now" functionality has been fully implemented for the Medireuse platfor
 
 ### Backend Changes
 
-#### 1. **Order Model** (`backend/src/models/Order.js`)
-- New MongoDB schema for storing order details
+#### 1. **Order Storage** (`backend/src/data/store.js`)
+- SQLite-backed order table for storing order details
 - Fields: buyer, medicineName, medicineType, quantity, pricePerUnit, totalPrice, expiryDate, status, paymentMethod, shippingAddress, notes
 - Status tracking: pending, confirmed, shipped, delivered, cancelled
 - Automatic timestamps for created and updated
@@ -294,14 +294,14 @@ Get your Razorpay keys from: https://dashboard.razorpay.com/app/settings/api-key
 - Lucide-react (icons)
 
 ### Backend
-- MongoDB/Mongoose (existingONGO_URI`
+- SQLite database path (`SQLITE_DB_PATH`, optional)
 - `JWT_SECRET`
 - `JWT_EXPIRE`
 
 ## Dependencies
 
 No new npm packages required. Uses existing:
-- MongoDB/Mongoose (backend)
+- Node built-in SQLite support (backend)
 - Express.js (backend)
 - React (frontend)
 - Lucide-react (icons)

@@ -1,22 +1,17 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import connectDB from '../src/config/db.js';
+import connectDB, { closeDB } from '../src/config/db.js';
 import app from '../server.js';
 
-let mongoServer;
 let token;
 let secondUserToken;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await connectDB(uri);
+  connectDB(':memory:');
 
   const registerRes = await request(app).post('/api/auth/register').send({
     name: 'Medicine Seller',
     email: 'medicine-seller@example.com',
-    password: 'password123'
+    password: 'password123',
   });
 
   token = registerRes.body.token;
@@ -24,15 +19,14 @@ beforeAll(async () => {
   const secondRegisterRes = await request(app).post('/api/auth/register').send({
     name: 'Another Seller',
     email: 'another-seller@example.com',
-    password: 'password123'
+    password: 'password123',
   });
 
   secondUserToken = secondRegisterRes.body.token;
 });
 
-afterAll(async () => {
-  await mongoose.disconnect();
-  if (mongoServer) await mongoServer.stop();
+afterAll(() => {
+  closeDB();
 });
 
 describe('Medicine listing with MRP', () => {
@@ -48,7 +42,7 @@ describe('Medicine listing with MRP', () => {
         medicineType: 'Tablet',
         quantity: 3,
         mrp: 150,
-        imageUrl: 'https://example.com/paracetamol.jpg'
+        imageUrl: 'https://example.com/paracetamol.jpg',
       })
       .expect(201);
 
@@ -71,7 +65,7 @@ describe('Medicine listing with MRP', () => {
         quantity: 1,
         pricePerUnit: 200,
         mrp: 150,
-        imageUrl: 'https://example.com/ibuprofen.jpg'
+        imageUrl: 'https://example.com/ibuprofen.jpg',
       })
       .expect(400);
 
@@ -91,7 +85,7 @@ describe('Medicine listing with MRP', () => {
         medicineType: 'Tablet',
         quantity: 2,
         mrp: 90,
-        imageUrl: 'https://example.com/cetrizine.jpg'
+        imageUrl: 'https://example.com/cetrizine.jpg',
       })
       .expect(201);
 
@@ -112,9 +106,7 @@ describe('Medicine listing with MRP', () => {
     const mine = Array.isArray(myListRes.body.medicines) ? myListRes.body.medicines : [];
     expect(mine.some((medicine) => medicine._id === medicineId)).toBe(false);
 
-    const browseRes = await request(app)
-      .get('/api/medicines')
-      .expect(200);
+    const browseRes = await request(app).get('/api/medicines').expect(200);
     const browse = Array.isArray(browseRes.body.medicines) ? browseRes.body.medicines : [];
     expect(browse.some((medicine) => medicine._id === medicineId)).toBe(false);
   });
@@ -131,7 +123,7 @@ describe('Medicine listing with MRP', () => {
         medicineType: 'Tablet',
         quantity: 1,
         mrp: 220,
-        imageUrl: 'https://example.com/azithromycin.jpg'
+        imageUrl: 'https://example.com/azithromycin.jpg',
       })
       .expect(201);
 

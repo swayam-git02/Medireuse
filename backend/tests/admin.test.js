@@ -1,35 +1,27 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import connectDB from '../src/config/db.js';
+import connectDB, { closeDB } from '../src/config/db.js';
+import { createUser } from '../src/data/store.js';
 import app from '../server.js';
-import User from '../src/models/User.js';
 
-let mongoServer;
 let adminToken;
 let userToken;
 
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await connectDB(uri);
+  connectDB(':memory:');
 
-  // create an admin user directly in DB
-  const admin = await User.create({
+  await createUser({
     name: 'Admin User',
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
   });
 
-  // create a regular user too
-  const normal = await User.create({
+  await createUser({
     name: 'Normal User',
     email: 'user@example.com',
     password: 'password123',
   });
 
-  // login both to get access tokens
   const resA = await request(app)
     .post('/api/auth/login')
     .send({ email: 'admin@example.com', password: 'password123' })
@@ -43,9 +35,8 @@ beforeAll(async () => {
   userToken = resU.body.token;
 });
 
-afterAll(async () => {
-  await mongoose.disconnect();
-  if (mongoServer) await mongoServer.stop();
+afterAll(() => {
+  closeDB();
 });
 
 describe('Admin routes', () => {
@@ -65,10 +56,10 @@ describe('Admin routes', () => {
       .get('/api/admin/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
+
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.users)).toBe(true);
     expect(res.body.users.length).toBeGreaterThanOrEqual(2);
-    // ensure password field is not returned
     expect(res.body.users[0].password).toBeUndefined();
   });
 });

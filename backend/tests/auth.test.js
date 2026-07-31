@@ -1,20 +1,13 @@
 import request from 'supertest';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import connectDB from '../src/config/db.js';
+import connectDB, { closeDB } from '../src/config/db.js';
 import app from '../server.js';
 
-let mongoServer;
-
-beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create();
-  const uri = mongoServer.getUri();
-  await connectDB(uri);
+beforeAll(() => {
+  connectDB(':memory:');
 });
 
-afterAll(async () => {
-  await mongoose.disconnect();
-  if (mongoServer) await mongoServer.stop();
+afterAll(() => {
+  closeDB();
 });
 
 describe('Auth flows: register, login, refresh, logout', () => {
@@ -27,12 +20,15 @@ describe('Auth flows: register, login, refresh, logout', () => {
     expect(res.body.token).toBeDefined();
     const setCookie = res.headers['set-cookie'];
     expect(setCookie).toBeDefined();
-    // capture cookie for subsequent requests
     cookie = setCookie.join(';');
   });
 
   test('Login should set refresh cookie', async () => {
-    const res = await request(app).post('/api/auth/login').send({ email: user.email, password: user.password }).expect(200);
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: user.email, password: user.password })
+      .expect(200);
+
     expect(res.body.success).toBe(true);
     expect(res.body.token).toBeDefined();
     const setCookie = res.headers['set-cookie'];
@@ -54,7 +50,6 @@ describe('Auth flows: register, login, refresh, logout', () => {
     expect(res.body.success).toBe(true);
     const setCookie = res.headers['set-cookie'];
     expect(setCookie).toBeDefined();
-    // cookie should be cleared
     expect(setCookie.join(';').toLowerCase()).toMatch(/refreshtoken=;/);
   });
 });

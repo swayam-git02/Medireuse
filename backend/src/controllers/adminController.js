@@ -1,9 +1,8 @@
-import User from '../models/User.js';
+import { listUsers } from '../data/store.js';
 
-// return list of all users (non-admins and admins)
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = listUsers();
     return res.json({ success: true, count: users.length, users });
   } catch (error) {
     console.error('AdminController.getAllUsers error', error);

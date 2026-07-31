@@ -1,43 +1,39 @@
-import express from 'express';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectDB from './src/config/db.js';
-import authRoutes from './src/routes/authRoutes.js';
-import adminRoutes from './src/routes/adminRoutes.js';
-import medicineRoutes from './src/routes/medicineRoutes.js';
-import orderRoutes from './src/routes/orderRoutes.js';
-import uploadRoutes from './src/routes/uploadRoutes.js';
-import cookieParser from 'cookie-parser';
+import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import connectDB from './src/config/db.js';
+import adminRoutes from './src/routes/adminRoutes.js';
+import authRoutes from './src/routes/authRoutes.js';
+import medicineRoutes from './src/routes/medicineRoutes.js';
+import orderRoutes from './src/routes/orderRoutes.js';
+import uploadRoutes from './src/routes/uploadRoutes.js';
 
-// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// Load environment variables
-dotenv.config();
-
-// Don't auto-connect during tests. Tests will call connectDB(uri) explicitly.
 if (process.env.NODE_ENV !== 'test') {
-  dotenv.config();
-  connectDB().catch((err) => {
-    console.error('Failed to connect to DB:', err);
+  try {
+    connectDB();
+  } catch (error) {
+    console.error('Failed to initialize SQLite database:', error);
     process.exit(1);
-  });
+  }
 }
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Security & infra middleware
 app.use(helmet());
 app.use(cookieParser());
 
@@ -45,48 +41,35 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Rate limit auth endpoints to mitigate brute-force
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
-  message: { success: false, message: 'Too many requests, please try again later.' }
+  message: { success: false, message: 'Too many requests, please try again later.' },
 });
 
-// Routes
 app.use('/api/auth', authLimiter, authRoutes);
-
-// admin-specific endpoints (protected & role-checked)
 app.use('/api/admin', adminRoutes);
-
-// medicine listing endpoints
 app.use('/api/medicines', medicineRoutes);
-
-// order endpoints (protected)
 app.use('/api/orders', orderRoutes);
-
-// upload endpoints (protected)
 app.use('/api/uploads', uploadRoutes);
 
-// Health check route
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Medireuse API is running' });
 });
 
-// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Route not found'
+    message: 'Route not found',
   });
 });
 
